@@ -1,63 +1,125 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import preview from '@/assets/images/backgrounds/preview-img.png';
-import api from '@/utils/axios';
+import { ref, computed, watch } from 'vue';
+import preview from '@/assets/images/backgrounds/preview-img.png'; // Default preview
 import { useSnackbar } from '@/composables/useSnackbar';
 import { useProductStore } from '@/stores/apps/product';
-
+import { useForm, useField } from 'vee-validate';
+import * as yup from 'yup';
 
 const { showSuccess, showError } = useSnackbar();
 const productStore = useProductStore();
 
+// --- Image Handling ---
 const fileInput = ref<HTMLInputElement | null>(null);
-const imageUrl = ref<string>(productStore.product.imagen || '');
+const imageUrl = ref<string>(productStore.product.imagen || preview); // Use default preview if no image
 const selectedFile = ref<File | null>(null);
 
-const sku = ref(productStore.product.sku);
-const codigoBarras = ref(productStore.product.codigoBarras);
-const stock = ref(productStore.product.stock);
-const estatus = ref(productStore.product.estatus || 'ACTIVO');
+watch(() => productStore.product.imagen, (newVal) => {
+    imageUrl.value = newVal || preview;
+});
 
-
-
+watch(imageUrl, (newUrl) => {
+    if (newUrl !== productStore.product.imagen) {
+        productStore.setProductField('imagen', newUrl);
+        // showSuccess('Imagen actualizada en el store'); // Optional: notify on reactive update
+    }
+});
 
 const handleFileChange = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+        imageUrl.value = productStore.product.imagen || preview; // Reset to store image or preview if no file selected
+        selectedFile.value = null;
+        return;
+    }
 
-    // Validate file size and type (optional)
-    if (file.size > 1024 * 1024 * 5) {
-        alert('¡El tamaño del archivo es demasiado grande! Se permiten 5 MB como máximo.');
+    if (file.size > 1024 * 1024 * 5) { // 5MB limit
+        showError('¡El tamaño del archivo es demasiado grande! Se permiten 5 MB como máximo.');
+        if (fileInput.value) fileInput.value.value = ''; // Clear the file input
         return;
     }
 
     selectedFile.value = file;
-
-    // Read and display image preview
     const reader = new FileReader();
     reader.onload = (e) => {
-        imageUrl.value = e.target?.result as string;
+        imageUrl.value = e.target?.result as string; // This will trigger the watcher to update the store
     };
     reader.readAsDataURL(file);
-
-    // Handle actual upload logic (needs server-side implementation)
-    // ...
 };
 
-function saveRightSide() {
-    // Aquí podrías agregar la lógica de subida de archivo si es necesaria.
-    productStore.updateRightSide({
-        imagen: imageUrl.value,
-        sku: sku.value,
-        codigoBarras: codigoBarras.value,
-        stock: stock.value.toString(),
-        estatus: estatus.value,
-    });
-    showSuccess('Datos secundarios actualizados');
-}
+// --- VeeValidate and Yup Setup for Estatus ---
+const estatusValidationSchema = yup.object({
+    estatus: yup.string().required('El estatus del producto es requerido.'),
+});
 
+const { handleSubmit: validateEstatus, errors: formErrors } = useForm({
+    validationSchema: estatusValidationSchema,
+    initialValues: {
+        estatus: productStore.product.estatus || 'ACTIVO',
+    }
+});
+
+const { value: estatusModel, errorMessage: estatusError, handleChange: handleEstatusChange } = useField<string>('estatus');
+
+// --- Computed properties for store synchronization ---
+// SKU, CodigoBarras, Stock are not editable in this component's template.
+// If they were, computed properties would look like this:
+/*
+const sku = computed({
+    get: () => productStore.product.sku,
+    set: (val) => productStore.setProductField('sku', val)
+});
+const codigoBarras = computed({
+    get: () => productStore.product.codigoBarras,
+    set: (val) => productStore.setProductField('codigoBarras', val)
+});
+const stock = computed({
+    get: () => productStore.product.stock,
+    set: (val) => productStore.setProductField('stock', Number(val)) // Assuming stock is number
+});
+*/
+
+// Synchronization for estatus (using watch, as useField handles the local model)
+watch(estatusModel, (newVal) => {
+    if (newVal !== productStore.product.estatus) {
+        productStore.setProductField('estatus', newVal);
+    }
+});
+
+// Ensure estatusModel is updated if store changes externally
+watch(() => productStore.product.estatus, (newVal) => {
+    if (newVal !== estatusModel.value) {
+        estatusModel.value = newVal || 'ACTIVO';
+    }
+});
+
+
+// The saveRightSide function is no longer strictly necessary for these fields due to reactive updates.
+// It could be repurposed if there was a specific "Save" button for this section,
+// or for operations like actual file upload to a server.
+// For now, direct store updates via computed props/watchers are preferred.
+/*
+function saveRightSide() {
+    // Validate estatus before any explicit save action, if needed
+    validateEstatus().then(result => {
+        if (result.valid) {
+            // This part is now largely handled by reactive updates.
+            // Only specific actions like actual file upload might go here.
+            productStore.updateRightSide({ // This store action might need adjustment
+                imagen: imageUrl.value,
+                // sku, codigoBarras, stock would be directly from store or their computed wrappers
+                estatus: estatusModel.value,
+            });
+            showSuccess('Datos secundarios actualizados');
+        } else {
+            showError('Por favor, corrija los errores de validación.');
+        }
+    });
+}
+*/
+const estatusItems = ['ACTIVO', 'INACTIVO'];
 
 </script>
 <template>
@@ -82,14 +144,19 @@ function saveRightSide() {
                 <v-card-item>
                     <div class="d-flex align-center justify-space-between">
                         <h5 class="text-h5">Estatus</h5>
-                        <v-avatar size="12" v-if="select == 'Published'" class="bg-success rounded-circle"></v-avatar>
-                        <v-avatar size="12" v-else-if="select == 'Draft'" class="bg-error rounded-circle"></v-avatar>
-                        <v-avatar size="12" v-else-if="select == 'Scheduled'" class="bg-primary rounded-circle"></v-avatar>
-                        <v-avatar size="12" v-else class="bg-warning rounded-circle"></v-avatar>
+                        <v-avatar size="12" v-if="estatusModel === 'ACTIVO'" class="bg-success rounded-circle"></v-avatar>
+                        <v-avatar size="12" v-else-if="estatusModel === 'INACTIVO'" class="bg-error rounded-circle"></v-avatar>
+                        <v-avatar size="12" v-else class="bg-warning rounded-circle"></v-avatar> <!-- For other potential states -->
                     </div>
                     <div class="mt-5">
-                        <v-select v-model="select" variant="outlined" :items="['Published', 'Draft', 'Scheduled', 'Inactive']"></v-select>
-                        <!-- <v-select v-model="select" :items="items" variant="outlined" class="text-body-1" hide-details></v-select> -->
+                        <v-select 
+                            v-model="estatusModel"
+                            :items="estatusItems"
+                            variant="outlined"
+                            label="Seleccione un estatus"
+                            :error-messages="estatusError"
+                            @update:modelValue="handleEstatusChange"
+                        />
                         <p class="text-12 textSecondary mt-n3">Establecer el estado del producto.</p>
                     </div>
                 </v-card-item>

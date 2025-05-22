@@ -3,79 +3,132 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 import EditorMenubar from '@/components/forms/plugins/editor/EditorMenubar.vue';
 import StarterKit from '@tiptap/starter-kit';
 import { ref } from 'vue';
-import { InfoCircleIcon } from 'vue-tabler-icons';
 import { useProductStore } from '@/stores/apps/product';
-
+import { useForm, useField } from 'vee-validate';
+import * as yup from 'yup';
 
 const productStore = useProductStore();
-const nombre = ref(productStore.product.nombre);
-const precio = ref(productStore.product.precio);
-const editor = useEditor({
-    extensions: [StarterKit],
-    content: productStore.product.descripcion || ''
+
+// Validation Schema
+const validationSchema = yup.object({
+    nombre: yup.string()
+        .required('El nombre del producto es requerido.')
+        .min(3, 'El nombre del producto debe tener al menos 3 caracteres.')
+        .max(100, 'El nombre del producto no debe exceder los 100 caracteres.')
+        .label('El nombre del producto'),
+    precio: yup.number()
+        .typeError('El precio debe ser un número.') // Handles cases where input is not parseable to number
+        .positive('El precio debe ser un número positivo.')
+        .required('El precio es requerido.')
+        .label('El precio'),
 });
 
-function saveGeneral() {
+// Form setup with VeeValidate
+const { handleSubmit, errors, setFieldValue } = useForm({
+    validationSchema,
+    initialValues: {
+        nombre: productStore.product.nombre,
+        precio: productStore.product.precio ? Number(productStore.product.precio) : undefined,
+    }
+});
+
+// Watch for store changes to update fields if necessary (e.g. if loaded from elsewhere)
+watch(() => productStore.product.nombre, (newVal) => {
+    setFieldValue('nombre', newVal);
+});
+watch(() => productStore.product.precio, (newVal) => {
+    setFieldValue('precio', newVal ? Number(newVal) : undefined);
+});
+
+
+// Fields
+const { value: nombre, errorMessage: nombreError } = useField<string>('nombre');
+const { value: precio, errorMessage: precioError } = useField<number>('precio');
+
+const editor = useEditor({
+    extensions: [StarterKit],
+    content: productStore.product.descripcion || '',
+    onUpdate: ({ editor: tiptapEditor }) => {
+        // Keep productStore.product.descripcion in sync if needed, though not directly part of validation
+        // This might be better handled by only updating store on saveGeneral
+    }
+});
+
+const saveGeneral = handleSubmit(async (values) => {
     productStore.setGeneralData({
-        nombre: nombre.value,
-        precio: precio.value.toString(),
+        nombre: values.nombre,
+        precio: values.precio.toString(), // Ensure price is a string for the store
         descripcion: editor?.value?.getHTML() || ''
     });
-    alert('Información general guardada. Ahora puede acceder a RightSide.');
-}
+    // alert('Información general guardada. Ahora puede acceder a RightSide.'); // Removed as per task
+});
+
 </script>
 <template>
-    <div class="pa-1 pt-0">
-        <!-- General -->
-        <v-card elevation="10" class="mb-6">
-            <v-card-item>
-                <h5 class="text-h5 mb-8">General</h5>
-                <v-row class="d-flex flex-cols gap-3">
-                    <v-col cols="12">
-                        <v-label class="font-weight-medium mb-2">Nombre del Producto <span class="text-error ms-1">*</span></v-label>
-                        <VTextField type="text" placeholder="Product Name" variant="outlined" hide-details v-model="nombre"></VTextField>
-                        <p class="textSecondary text-12 mt-1">Se requiere un nombre de producto y se recomienda que sea único.</p>
-                    </v-col>
-                    <v-col cols="12">
-                        <v-label class="font-weight-medium mb-2">Descripción</v-label>
-                        <v-card variant="outlined">
-                            <div v-if="editor">
-                                <EditorMenubar :editor="editor" class="border-b" />
-                            </div>
-                            <editor-content :editor="editor" style="min-height: 150px" />
-                        </v-card>
-                        <p class="textSecondary text-12 mt-1">Establezca una descripción al producto para una mejor visibilidad.</p>
-                    </v-col>
-                </v-row>
-            </v-card-item>
-        </v-card>
+    <v-form @submit.prevent="saveGeneral">
+        <div class="pa-1 pt-0">
+            <!-- General -->
+            <v-card elevation="10" class="mb-6">
+                <v-card-item>
+                    <h5 class="text-h5 mb-8">General</h5>
+                    <v-row class="d-flex flex-cols gap-3">
+                        <v-col cols="12">
+                            <v-label class="font-weight-medium mb-2">Nombre del Producto <span class="text-error ms-1">*</span></v-label>
+                            <VTextField 
+                                type="text" 
+                                placeholder="Product Name" 
+                                variant="outlined" 
+                                v-model="nombre"
+                                :error-messages="nombreError"
+                            />
+                            <p class="textSecondary text-12 mt-1">Se requiere un nombre de producto y se recomienda que sea único.</p>
+                        </v-col>
+                        <v-col cols="12">
+                            <v-label class="font-weight-medium mb-2">Descripción</v-label>
+                            <v-card variant="outlined">
+                                <div v-if="editor">
+                                    <EditorMenubar :editor="editor" class="border-b" />
+                                </div>
+                                <editor-content :editor="editor" style="min-height: 150px" />
+                            </v-card>
+                            <p class="textSecondary text-12 mt-1">Establezca una descripción al producto para una mejor visibilidad.</p>
+                        </v-col>
+                    </v-row>
+                </v-card-item>
+            </v-card>
 
-        <!-- Media
-        <v-card elevation="10" class="mb-6">
-            <v-card-text>
-                <h5 class="text-h5 mb-8">Media</h5>
-                <v-file-input
-                    color="primary"
-                    label="Drop files here or click to upload."
-                    placeholder="Select your files"
-                    prepend-icon="mdi-paperclip"
-                    variant="outlined"
-                    chips
-                    multiple
-                ></v-file-input>
-            </v-card-text>
-        </v-card> -->
+            <!-- Media
+            <v-card elevation="10" class="mb-6">
+                <v-card-text>
+                    <h5 class="text-h5 mb-8">Media</h5>
+                    <v-file-input
+                        color="primary"
+                        label="Drop files here or click to upload."
+                        placeholder="Select your files"
+                        prepend-icon="mdi-paperclip"
+                        variant="outlined"
+                        chips
+                        multiple
+                    ></v-file-input>
+                </v-card-text>
+            </v-card> -->
 
-        <!-- Pricing -->
-        <v-card elevation="10" class="mb-6">
-            <v-card-text>
-                <h5 class="text-h5 mb-8">Precios</h5>
-                <v-row class="d-flex flex-cols gap-3">
-                    <v-col cols="12">
-                        <v-label class="font-weight-medium mb-2">Precio base <span class="text-error ms-1">*</span></v-label>
-                        <VTextField type="text" placeholder="Product price" variant="outlined" hide-details v-model="precio"></VTextField>
-                        <p class="textSecondary text-12 mt-1">Establecer el precio del producto.</p>
-                    </v-col>
+            <!-- Pricing -->
+            <v-card elevation="10" class="mb-6">
+                <v-card-text>
+                    <h5 class="text-h5 mb-8">Precios</h5>
+                    <v-row class="d-flex flex-cols gap-3">
+                        <v-col cols="12">
+                            <v-label class="font-weight-medium mb-2">Precio base <span class="text-error ms-1">*</span></v-label>
+                            <VTextField 
+                                type="number" 
+                                placeholder="Product price" 
+                                variant="outlined" 
+                                v-model="precio"
+                                :error-messages="precioError"
+                            />
+                            <p class="textSecondary text-12 mt-1">Establecer el precio del producto.</p>
+                        </v-col>
 <!--                    <v-col cols="12">
                         <div class="d-flex align-center">
                             <v-label class="font-weight-medium mb-2 me-1 ">Discount Type </v-label>
@@ -211,12 +264,13 @@ function saveGeneral() {
                             </v-row>
                         </div>
                     </v-col>-->
-                </v-row>
-            </v-card-text>
-        </v-card>
-    </div>
-    <div class="d-flex mb-md-0 mb-3 gap-3">
-        <v-btn flat color="primary"> save changes </v-btn>
-        <v-btn variant="tonal" color="error"> cancel </v-btn>
-    </div>
+                    </v-row>
+                </v-card-text>
+            </v-card>
+        </div>
+        <div class="d-flex mb-md-0 mb-3 gap-3 pa-1 pt-0">
+            <v-btn flat color="primary" type="submit"> save changes </v-btn>
+            <v-btn variant="tonal" color="error"> cancel </v-btn>
+        </div>
+    </v-form>
 </template>

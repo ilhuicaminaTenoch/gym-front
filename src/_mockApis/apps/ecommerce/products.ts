@@ -187,4 +187,55 @@ mock.onGet('/api/products/one').reply(() => {
     return [200, products];
 });
 
+mock.onPost('/api/products').reply((config) => {
+    const { nombre, descripcion, precio, stock, codigoBarras, imagen, sku, estatus } = JSON.parse(config.data);
+
+    const requiredFields = ['nombre', 'precio', 'stock', 'codigoBarras', 'sku', 'estatus'];
+    const missingFields = requiredFields.filter(field => {
+        const value = JSON.parse(config.data)[field];
+        return value === undefined || value === null || value === '';
+    });
+
+    if (missingFields.length > 0) {
+        return [400, { error: "Bad Request", message: "Faltan campos requeridos.", missingFields }];
+    }
+
+    if (sku && products.some(product => product.sku === sku)) {
+        return [409, { error: "Conflict", message: "El SKU proporcionado ya existe." }];
+    }
+
+    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+
+    const newProduct: Products = {
+        id: newId,
+        image: imagen || product1,
+        name: nombre,
+        description: descripcion || chance.paragraph({ sentences: 1 }),
+        rating: chance.floating({ min: 0.1, max: 5.0 }),
+        discount: 0,
+        salePrice: Number(precio),
+        offerPrice: Number(precio), // Default to salePrice
+        gender: 'N/A', // Default
+        categories: ['general'], // Default
+        colors: [], // Default
+        popularity: chance.natural(),
+        date: Date.now(),
+        created: new Date(),
+        isStock: Number(stock) > 0,
+        qty: Number(stock),
+        rank: chance.natural(),
+        price: precio, // string as per existing Products type
+        codigoBarras: codigoBarras,
+        sku: sku,
+        estatus: estatus,
+        // offer: '', // Assuming this is not required based on Products type
+        // subCategoryId: 0, // Assuming this is not required
+        // brandId: 0 // Assuming this is not required
+    };
+
+    products.push(newProduct);
+
+    return [201, newProduct];
+});
+
 export default products;
