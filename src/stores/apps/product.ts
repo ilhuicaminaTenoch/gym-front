@@ -24,6 +24,7 @@ export const useProductStore  = defineStore('product', {
             imagen: '',
             sku: '',
             estatus: '',
+            cantidad: 0
         } as ProductCreation,
         generalSaved: false
     }),

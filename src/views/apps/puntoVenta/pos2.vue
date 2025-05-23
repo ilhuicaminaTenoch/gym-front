@@ -16,7 +16,13 @@
                         clearable
                         :loading="loading"
                         @keyup.enter="onEnterBuscar"
-                        @click:clear="() => { search = ''; productos = []; focusSearchInput(); }"
+                        @click:clear="
+                            () => {
+                                search = '';
+                                productos = [];
+                                focusSearchInput();
+                            }
+                        "
                     />
                     <StepFirst />
                 </v-card>
@@ -40,34 +46,34 @@
                     <!-- Tabla de productos en el carrito -->
                     <v-table>
                         <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Cant.</th>
-                            <th>Precio</th>
-                        </tr>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cant.</th>
+                                <th>Precio</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        <tr v-for="item in posStore.carrito" :key="item.id">
-                            <td>{{ item.nombre }}</td>
-                            <td>
-                                <template v-if="item.cantidad < 3">
-                                    {{ item.cantidad }}
-                                </template>
-                                <template v-else>
-                                    <v-text-field
-                                        v-model.number="item.cantidad"
-                                        type="number"
-                                        min="1"
-                                        max="999"
-                                        hide-details
-                                        density="compact"
-                                        style="max-width: 60px"
-                                        @change="actualizarCantidad(item)"
-                                    />
-                                </template>
-                            </td>
-                            <td>$ {{ (item.precio * item.cantidad).toFixed(2) }}</td>
-                        </tr>
+                            <tr v-for="item in posStore.carrito" :key="item.id">
+                                <td>{{ item.nombre }}</td>
+                                <td>
+                                    <template v-if="item.cantidad < 3">
+                                        {{ item.cantidad }}
+                                    </template>
+                                    <template v-else>
+                                        <v-text-field
+                                            v-model.number="item.cantidad"
+                                            type="number"
+                                            min="1"
+                                            max="999"
+                                            hide-details
+                                            density="compact"
+                                            style="max-width: 60px"
+                                            @change="actualizarCantidad(item)"
+                                        />
+                                    </template>
+                                </td>
+                                <td>$ {{ (item.precio * item.cantidad).toFixed(2) }}</td>
+                            </tr>
                         </tbody>
                     </v-table>
 
@@ -87,24 +93,50 @@
                         <span class="text-h6 font-weight-bold">$ {{ total.toFixed(2) }}</span>
                     </div>
 
+                    <v-text-field
+                        v-if="metodoPago === 'EFECTIVO'"
+                        v-model.number="montoRecibido"
+                        label="Monto recibido"
+                        prefix="$"
+                        type="number"
+                        :min="total"
+                        hide-details
+                        density="compact"
+                        class="mt-4"
+                    />
+
+                    <!-- Sólo para EFECTIVO: mostrar cambio -->
+                    <v-alert
+                        v-if="metodoPago === 'EFECTIVO' && montoRecibido !== null"
+                        :type="cambio < 0 ? 'error' : 'success'"
+                        :icon="cambio < 0 ? 'mdi-close' : 'mdi-check'"
+                        prominent
+                        border="left"
+                        elevation="2"
+                        class="mt-4"
+                    >
+                        <div class="d-flex justify-space-between align-center">
+                            <span class="text-h5 font-weight-bold"> Cambio: </span>
+                            <span :class="['font-weight-bold', cambio < 0 ? 'text-h4 red--text' : 'text-h4']">
+                                $ {{ cambio.toFixed(2) }}
+                            </span>
+                        </div>
+                    </v-alert>
+
                     <!-- Selector de método de pago con v-btn-toggle -->
                     <v-btn-toggle
                         v-model="metodoPago"
                         mandatory
                         tile
-                        class="d-flex flex-row flex-wrap gap-2 mt-2"
+                        class="d-flex flex-row gap-2 mt-2"
                     >
-                        <v-btn value="EFECTIVO" class="payment-btn d-flex flex-column align-center pa-3">
+                        <v-btn
+                            value="EFECTIVO"
+                            class="payment-btn d-flex flex-column align-center pa-3"
+                            disabled
+                        >
                             <v-icon size="28">mdi-cash</v-icon>
                             <span class="text-caption mt-1">Efectivo</span>
-                        </v-btn>
-                        <v-btn value="TARJETA" class="payment-btn d-flex flex-column align-center pa-3">
-                            <v-icon size="28">mdi-credit-card</v-icon>
-                            <span class="text-caption mt-1">Tarjeta</span>
-                        </v-btn>
-                        <v-btn value="TRANSFERENCIA" class="payment-btn d-flex flex-column align-center pa-3">
-                            <v-icon size="28">mdi-bank-transfer</v-icon>
-                            <span class="text-caption mt-1">Transf.</span>
                         </v-btn>
                     </v-btn-toggle>
 
@@ -113,18 +145,13 @@
                         block
                         color="success"
                         class="mb-2 mt-4"
-                        :disabled="posStore.carrito.length === 0"
+                        :disabled="
+                            posStore.carrito.length === 0 ||
+                            (metodoPago === 'EFECTIVO' && (montoRecibido === null || cambio < 0))
+                        "
                         @click="pagar"
                     >
                         Pagar
-                    </v-btn>
-                    <v-btn
-                        block
-                        color="primary"
-                        :disabled="posStore.carrito.length === 0"
-                        @click="guardarOrden"
-                    >
-                        Guardar Orden
                     </v-btn>
                 </v-card>
             </v-col>
@@ -163,7 +190,7 @@ const descuento = computed(() => posStore.discount);
 const total = computed(() => posStore.total);
 
 // Variable para el método de pago
-const metodoPago = ref<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA'>('EFECTIVO');
+const metodoPago = ref<'EFECTIVO'>('EFECTIVO')
 
 function focusSearchInput() {
     nextTick(() => searchInputRef.value?.focus());
@@ -191,10 +218,7 @@ async function buscarProductoYAgregar() {
     loading.value = true;
     try {
         const { data } = await api.get('/productos', {
-            params:
-                searchType.value === 'codigoBarras'
-                    ? { codigoBarras: search.value }
-                    : { nombre: search.value }
+            params: searchType.value === 'codigoBarras' ? { codigoBarras: search.value } : { nombre: search.value }
         });
         const resultados = data.content || [];
         if (resultados.length === 1) {
@@ -234,6 +258,14 @@ async function pagar() {
             showError('El carrito está vacío');
             return;
         }
+
+        if (metodoPago.value === 'EFECTIVO') {
+            if (montoRecibido.value === null || montoRecibido.value < total.value) {
+                showError('El monto recibido es insuficiente');
+                return;
+            }
+        }
+
         // Verificar stock disponible
         const sinStock = await posStore.verificarStockDisponible();
         if (sinStock.length > 0) {
@@ -252,11 +284,17 @@ async function pagar() {
             pago: {
                 monto: posStore.total,
                 metodoPago: metodoPago.value,
+                ...(metodoPago.value === 'EFECTIVO' && {
+                    montoRecibido: montoRecibido.value,
+                    cambio: cambio.value
+                })
             }
         };
+
         const resultado = await posStore.procesarVenta(payload);
         showSuccess(`Venta registrada`);
         posStore.resetCart();
+        montoRecibido.value = null;
     } catch (error: any) {
         showError(error.message || 'Error procesando pago');
     } finally {
@@ -273,12 +311,20 @@ function verOrdenes() {
 }
 
 function transformarProductos(productos: CartItem[]): Detalle[] {
-    return productos.map(prod => ({
+    return productos.map((prod) => ({
         idProducto: prod.id,
         cantidad: prod.cantidad,
         precioUnitario: prod.precio
     }));
 }
+
+const montoRecibido = ref<number | null>(null);
+
+// cambio a devolver
+const cambio = computed(() => {
+    if (metodoPago.value !== 'EFECTIVO' || montoRecibido.value === null) return 0;
+    return montoRecibido.value - total.value;
+});
 
 onMounted(() => {
     // Cargar productos o inicializar la vista si es necesario
@@ -291,6 +337,7 @@ onMounted(() => {
     min-width: 80px;
     transition: background-color 0.3s;
 }
+
 .payment-btn:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }

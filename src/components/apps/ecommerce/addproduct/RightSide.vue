@@ -16,7 +16,8 @@ const selectedFile = ref<File | null>(null);
 const sku = ref(productStore.product.sku);
 const codigoBarras = ref(productStore.product.codigoBarras);
 const stock = ref(productStore.product.stock);
-const estatus = ref(productStore.product.estatus || 'ACTIVO');
+const estatus = ref(productStore.product.estatus || 'activo');
+
 
 
 
@@ -77,23 +78,23 @@ function saveRightSide() {
                 </v-card-item>
             </v-card>
 
-            <!-- Status -->
+            <!-- Status
             <v-card elevation="10" class="mb-6">
                 <v-card-item>
                     <div class="d-flex align-center justify-space-between">
                         <h5 class="text-h5">Estatus</h5>
-                        <v-avatar size="12" v-if="select == 'Published'" class="bg-success rounded-circle"></v-avatar>
-                        <v-avatar size="12" v-else-if="select == 'Draft'" class="bg-error rounded-circle"></v-avatar>
-                        <v-avatar size="12" v-else-if="select == 'Scheduled'" class="bg-primary rounded-circle"></v-avatar>
+                        <v-avatar size="12" v-if="estatus == 'activo'" class="bg-success rounded-circle"></v-avatar>
+                        <v-avatar size="12" v-else-if="estatus == 'Draft'" class="bg-error rounded-circle"></v-avatar>
+                        <v-avatar size="12" v-else-if="estatus == 'Scheduled'" class="bg-primary rounded-circle"></v-avatar>
                         <v-avatar size="12" v-else class="bg-warning rounded-circle"></v-avatar>
                     </div>
                     <div class="mt-5">
-                        <v-select v-model="select" variant="outlined" :items="['Published', 'Draft', 'Scheduled', 'Inactive']"></v-select>
-                        <!-- <v-select v-model="select" :items="items" variant="outlined" class="text-body-1" hide-details></v-select> -->
+                        <v-select v-model="estatus" variant="outlined" :items="['Published', 'Draft', 'Scheduled', 'Inactive']"></v-select>
+                        <v-select v-model="select" :items="items" variant="outlined" class="text-body-1" hide-details></v-select>
                         <p class="text-12 textSecondary mt-n3">Establecer el estado del producto.</p>
                     </div>
                 </v-card-item>
-            </v-card>
+            </v-card> -->
 
             <!-- Product Details
             <v-card elevation="10" class="mb-6">

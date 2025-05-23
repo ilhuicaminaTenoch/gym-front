@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 import EditorMenubar from '@/components/forms/plugins/editor/EditorMenubar.vue';
 import StarterKit from '@tiptap/starter-kit';
 import { XIcon } from 'vue-tabler-icons';
+import { useProductStore } from '@/stores/apps/product';
 const editor = useEditor({
     extensions: [StarterKit]
 });
@@ -12,6 +13,21 @@ const shipping = ref(false);
 const ship = ref(null);
 const select = ref('Size');
 const items = ref(['Color', 'Size', 'Material', 'Style']);
+
+const productStore = useProductStore();
+const sku = ref(productStore.product.sku);
+const codigoBarras = ref(productStore.product.codigoBarras);
+const stock = ref(productStore.product.stock);
+const cantidad = ref(productStore.product.cantidad);
+
+function saveAdvance() {
+    productStore.setGeneralData({
+        sku: sku.value,
+        stock: stock.value,
+        codigoBarras: codigoBarras.value
+    });
+
+}
 </script>
 <template>
     <div class="pa-1 pt-0">
@@ -22,7 +38,7 @@ const items = ref(['Color', 'Size', 'Material', 'Style']);
                 <v-row>
                     <v-col cols="12">
                         <v-label class="font-weight-medium mb-2">SKU <span class="text-error ms-1">*</span></v-label>
-                        <VTextField type="text" placeholder="SKU" variant="outlined" hide-details></VTextField>
+                        <VTextField v-model="sku" type="text" placeholder="SKU" variant="outlined" hide-details></VTextField>
                         <p class="textSecondary text-12 mt-1">Ingrese el SKU del producto</p>
                     </v-col>
                     <v-col cols="12">
