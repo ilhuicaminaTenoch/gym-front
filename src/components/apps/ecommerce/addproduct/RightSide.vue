@@ -10,8 +10,9 @@ const { showSuccess, showError } = useSnackbar();
 const productStore = useProductStore();
 
 const fileInput = ref<HTMLInputElement | null>(null);
-const imageUrl = ref<string>(productStore.product.imagen || '');
+const imageUrl = ref<string>(preview);
 const selectedFile = ref<File | null>(null);
+const selectedImageName = ref<string>(productStore.product.imagen || '');
 
 const estatus = ref(productStore.product.estatus || 'activo');
 
@@ -32,6 +33,7 @@ const handleFileChange = (event: Event) => {
     }
 
     selectedFile.value = file;
+    selectedImageName.value = file.name;
 
     // Read and display image preview
     const reader = new FileReader();
@@ -47,7 +49,7 @@ const handleFileChange = (event: Event) => {
 function saveRightSide() {
     // Aquí podrías agregar la lógica de subida de archivo si es necesaria.
     productStore.updateRightSide({
-        imagen: imageUrl.value,
+        imagen: selectedImageName.value,
         estatus: estatus.value,
     });
     showSuccess('Datos secundarios actualizados');
