@@ -22,6 +22,9 @@ function saveGeneral() {
         descripcion: editor?.value?.getHTML() || ''
     });
 
+    if (productStore.advancedSaved) {
+        productStore.createProduct();
+    }
 }
 </script>
 <template>
