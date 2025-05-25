@@ -21,7 +21,7 @@ function saveGeneral() {
         precio: precio.value.toString(),
         descripcion: editor?.value?.getHTML() || ''
     });
-    alert('Información general guardada. Ahora puede acceder a RightSide.');
+
 }
 </script>
 <template>
@@ -216,7 +216,7 @@ function saveGeneral() {
         </v-card>
     </div>
     <div class="d-flex mb-md-0 mb-3 gap-3">
-        <v-btn flat color="primary"> save changes </v-btn>
-        <v-btn variant="tonal" color="error"> cancel </v-btn>
+        <v-btn flat color="primary" @click="saveGeneral"> Guardar cambios </v-btn>
+        <v-btn variant="tonal" color="error"> Cancelar </v-btn>
     </div>
 </template>
