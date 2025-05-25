@@ -26,15 +26,24 @@ export const useProductStore  = defineStore('product', {
             estatus: '',
             cantidad: 0
         } as ProductCreation,
-        generalSaved: false
+        generalSaved: false,
+        advancedSaved: false
     }),
     actions: {
         setGeneralData(data: Partial<ProductCreation>){
             this.product = { ...this.product, ...data };
             this.generalSaved = true;
         },
+        setAdvancedData(data: Partial<ProductCreation>){
+            this.product = { ...this.product, ...data };
+            this.advancedSaved = true;
+        },
         updateRightSide(data: Partial<ProductCreation>) {
             this.product = { ...this.product, ...data };
+        },
+        createProduct() {
+            console.log('Creating product:', this.product);
+            this.resetProduct();
         },
         resetProduct() {
             this.product = {
@@ -46,8 +55,10 @@ export const useProductStore  = defineStore('product', {
                 imagen: '',
                 sku: '',
                 estatus: '',
+                cantidad: 0
             };
             this.generalSaved = false;
+            this.advancedSaved = false;
         }
     }
 });

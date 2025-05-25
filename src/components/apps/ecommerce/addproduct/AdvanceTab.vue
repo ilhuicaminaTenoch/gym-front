@@ -17,13 +17,12 @@ const items = ref(['Color', 'Size', 'Material', 'Style']);
 const productStore = useProductStore();
 const sku = ref(productStore.product.sku);
 const codigoBarras = ref(productStore.product.codigoBarras);
-const stock = ref(productStore.product.stock);
-const cantidad = ref(productStore.product.cantidad);
+const stock = ref<number>(Number(productStore.product.stock || '0'));
 
 function saveAdvance() {
-    productStore.setGeneralData({
+    productStore.setAdvancedData({
         sku: sku.value,
-        stock: stock.value,
+        stock: stock.value.toString(),
         codigoBarras: codigoBarras.value
     });
 
@@ -43,17 +42,13 @@ function saveAdvance() {
                     </v-col>
                     <v-col cols="12">
                         <v-label class="font-weight-medium mb-2">Codigo de Barras <span class="text-error ms-1">*</span></v-label>
-                        <VTextField type="text" placeholder="Número de código de barras" variant="outlined" hide-details></VTextField>
+                        <VTextField v-model="codigoBarras" type="text" placeholder="Número de código de barras" variant="outlined" hide-details></VTextField>
                         <p class="textSecondary text-12 mt-1">Introduzca el número de código de barras del producto.</p>
                     </v-col>
                     <v-col cols="12" md="6">
                         <v-label class="font-weight-medium mb-2">Cantidad <span class="text-error ms-1">*</span></v-label>
-                        <VTextField type="number" variant="outlined" hide-details></VTextField>
+                        <VTextField v-model="stock" type="number" variant="outlined" hide-details></VTextField>
                         <p class="textSecondary text-12 mt-1">Introduzca la cantidad del producto</p>
-                    </v-col>
-                    <v-col cols="12" md="6">
-                        <v-label class="font-weight-medium mb-3"><span class="text-error ms-1"></span></v-label>
-                        <VTextField type="number" placeholder="En almacén" variant="outlined" hide-details></VTextField>
                     </v-col>
                     <!-- <v-col cols="12">
                         <v-label class="font-weight-medium mb-2">Allow Backorders</v-label>
@@ -155,7 +150,7 @@ function saveAdvance() {
         </v-card> -->
     </div>
     <div class="d-flex mb-md-0 mb-3 gap-3">
-        <v-btn flat color="primary"> save changes </v-btn>
+        <v-btn flat color="primary" @click="saveAdvance"> save changes </v-btn>
         <v-btn variant="tonal" color="error"> cancel </v-btn>
     </div>
 </template>

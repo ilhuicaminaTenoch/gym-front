@@ -13,9 +13,6 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const imageUrl = ref<string>(productStore.product.imagen || '');
 const selectedFile = ref<File | null>(null);
 
-const sku = ref(productStore.product.sku);
-const codigoBarras = ref(productStore.product.codigoBarras);
-const stock = ref(productStore.product.stock);
 const estatus = ref(productStore.product.estatus || 'activo');
 
 
@@ -51,9 +48,6 @@ function saveRightSide() {
     // Aquí podrías agregar la lógica de subida de archivo si es necesaria.
     productStore.updateRightSide({
         imagen: imageUrl.value,
-        sku: sku.value,
-        codigoBarras: codigoBarras.value,
-        stock: stock.value.toString(),
         estatus: estatus.value,
     });
     showSuccess('Datos secundarios actualizados');
