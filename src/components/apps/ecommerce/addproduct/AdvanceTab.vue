@@ -23,6 +23,7 @@ function saveAdvance() {
     productStore.setAdvancedData({
         sku: sku.value,
         stock: stock.value.toString(),
+        cantidad: stock.value,
         codigoBarras: codigoBarras.value
     });
 

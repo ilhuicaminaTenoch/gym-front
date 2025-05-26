@@ -11,6 +11,7 @@ export interface ProductCreation {
     imagen?: string;      // URL o representación de la imagen
     sku: string;
     estatus: string;
+    cantidad?: number;
 };
 
 export const useProductStore  = defineStore('product', {
