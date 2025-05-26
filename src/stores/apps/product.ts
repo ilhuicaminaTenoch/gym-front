@@ -2,6 +2,11 @@ import { defineStore } from 'pinia';
 
 import type { Products } from '@/types/apps/EcommerceType';
 
+export interface ProductVariationItem {
+    type: string;
+    value: string;
+}
+
 export interface ProductCreation {
     nombre: string;
     descripcion: string;
@@ -12,6 +17,7 @@ export interface ProductCreation {
     sku: string;
     estatus: string;
     cantidad?: number;
+    variations?: ProductVariationItem[];
 };
 
 export const useProductStore  = defineStore('product', {
@@ -25,7 +31,8 @@ export const useProductStore  = defineStore('product', {
             imagen: '',
             sku: '',
             estatus: '',
-            cantidad: 0
+            cantidad: 0,
+            variations: []
         } as ProductCreation,
         generalSaved: false,
         advancedSaved: false
@@ -56,7 +63,8 @@ export const useProductStore  = defineStore('product', {
                 imagen: '',
                 sku: '',
                 estatus: '',
-                cantidad: 0
+                cantidad: 0,
+                variations: []
             };
             this.generalSaved = false;
             this.advancedSaved = false;
