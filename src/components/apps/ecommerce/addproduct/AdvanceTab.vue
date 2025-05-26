@@ -25,7 +25,7 @@ const currentVariations = ref<ProductVariationItem[]>([]);
 const variationValueInput = ref<string>('');
 
 onMounted(() => {
-    currentVariations.value = structuredClone(productStore.product.variations || []);
+    currentVariations.value = JSON.parse(JSON.stringify(productStore.product.variations || []));
 });
 
 function addVariation() {
