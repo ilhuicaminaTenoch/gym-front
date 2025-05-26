@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import EditorMenubar from '@/components/forms/plugins/editor/EditorMenubar.vue';
 import StarterKit from '@tiptap/starter-kit';
 import { XIcon } from 'vue-tabler-icons';
 import { useProductStore } from '@/stores/apps/product';
+import type { ProductVariationItem } from '@/stores/apps/product';
+
 const editor = useEditor({
     extensions: [StarterKit]
 });
@@ -19,12 +21,36 @@ const sku = ref(productStore.product.sku);
 const codigoBarras = ref(productStore.product.codigoBarras);
 const stock = ref<number>(Number(productStore.product.stock || '0'));
 
+const currentVariations = ref<ProductVariationItem[]>([]);
+const variationValueInput = ref<string>('');
+
+onMounted(() => {
+    currentVariations.value = structuredClone(productStore.product.variations || []);
+});
+
+function addVariation() {
+    if (!select.value || !variationValueInput.value.trim()) {
+        // Optional: Show some validation/error that type and value are needed
+        return;
+    }
+    currentVariations.value.push({
+        type: select.value,
+        value: variationValueInput.value.trim()
+    });
+    variationValueInput.value = '';
+}
+
+function removeVariation(index: number) {
+    currentVariations.value.splice(index, 1);
+}
+
 function saveAdvance() {
     productStore.setAdvancedData({
         sku: sku.value,
         stock: stock.value.toString(),
         cantidad: stock.value,
-        codigoBarras: codigoBarras.value
+        codigoBarras: codigoBarras.value,
+        variations: currentVariations.value
     });
 
 }
@@ -76,18 +102,24 @@ function saveAdvance() {
                             <v-col cols="4" class="pb-0">
                                 <v-select v-model="select" :items="items" variant="outlined" class="text-body-1" hide-details></v-select>
                             </v-col>
-                            <v-col cols="4" class="pb-0">
-                                <VTextField type="text" placeholder="Variation" variant="outlined" hide-details></VTextField>
-                            </v-col>
-                            <v-col cols="2" class="pb-0">
-                                <v-btn variant="tonal" flat size="large" class="px-0 py-0" color="error" min-width="50"
-                                    ><XIcon height="25" />
-                                </v-btn>
+                            <v-col cols="6" class="pb-0">
+                                <VTextField v-model="variationValueInput" type="text" placeholder="Variation" variant="outlined" hide-details></VTextField>
                             </v-col>
                             <v-col cols="12">
-                                <v-btn variant="tonal" color="primary"><span class="text-20 me-1">+</span> Add another variation</v-btn>
+                                <v-btn variant="tonal" color="primary" @click="addVariation"><span class="text-20 me-1">+</span> Add another variation</v-btn>
                             </v-col>
                         </v-row>
+                         <!-- Display Added Variations -->
+                        <div v-if="currentVariations.length > 0" class="mt-6">
+                            <h6 class="text-h6 mb-2">Variaciones Agregadas:</h6>
+                            <v-list lines="one" border>
+                                <v-list-item v-for="(variation, index) in currentVariations" :key="index" :title="`${variation.type}: ${variation.value}`">
+                                    <template v-slot:append>
+                                        <v-btn icon="mdi-close" flat size="small" @click="removeVariation(index)" color="error"></v-btn>
+                                    </template>
+                                </v-list-item>
+                            </v-list>
+                        </div>
                     </v-col>
                 </v-row>
             </v-card-text>
